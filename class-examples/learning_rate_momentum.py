@@ -7,10 +7,10 @@ x = np.linspace(-2, 2, 1000, endpoint=True)
 simulation_speed = 0.4
 
 def function(x):
-    return x**2 + np.sin(np.pi * x) + 1
+    return x**2 - 0.6 * np.cos(np.pi * 3 * x) + 1
 
 def derivative(x):
-    return 2 * x + np.pi * np.cos(np.pi * x)
+    return 2 * x + 0.6 * 5 * np.pi * np.sin(np.pi * 3 * x)
 
 y = function(x)
 learning_rate = 0.01
@@ -19,7 +19,7 @@ print("Click on plot to set starting x point")
 #select inital point
 fig, ax = plt.subplots()
 line, = ax.plot(x,y)
-plt.title("Learning Rate: %.3f, Momentum: %.3f" % (learning_rate, momentum))
+plt.title("Learning Rate: %.3f, Momentum: %.2f" % (learning_rate, momentum))
 plt.grid()
 plt.pause(simulation_speed)
 
