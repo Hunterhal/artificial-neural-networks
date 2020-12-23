@@ -1,6 +1,6 @@
 # Perceptron - Adaline Algorithm
 
-Beware that the data is created everytime program runs and sampled randomly. For better analysis, create and save data then change the parameters.   
+Beware that the data is created everytime program runs and sampled randomly. For better analysis, create and save data then change the parameters.  
 Example code is written for two dimensional data, change accordingly.
 Tanh is selected as default, if you change beware of class (-1, 1) or (0, 1).  
 Figures are created from numpy based perceptron, results can be generated for torch.  
@@ -16,7 +16,8 @@ The perceptron and Adaline are similar perceptron algortihm uses step function a
 ### Inference - Forward Pass
 
 First linear combination of the inputs is calculated with additional bias term.  
-$$v=x_0w_0+x_1w_1+...+x_{n-1}w_{n-1}+w_n$$
+
+<a href="https://www.codecogs.com/eqnedit.php?latex=v=x_0w_0&plus;x_1w_1&plus;...&plus;x_{n-1}w_{n-1}&plus;w_n" target="_blank"><img src="https://latex.codecogs.com/gif.latex?v=x_0w_0&plus;x_1w_1&plus;...&plus;x_{n-1}w_{n-1}&plus;w_n" title="v=x_0w_0+x_1w_1+...+x_{n-1}w_{n-1}+w_n" /></a>  
 Then this linear combination is given to logistic function.  
 $$y=tanh(v)$$
 
