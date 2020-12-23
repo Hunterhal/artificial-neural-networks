@@ -22,6 +22,5 @@ The data is created artificially by two Gaussian distrbutions.
 ## To-Do List
 
 All Updated, add new features as challenge  
-Add basic codes to jupyter notebook  
 Create test set and run codes
 Adam Optimizer
