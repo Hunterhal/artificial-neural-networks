@@ -6,11 +6,12 @@ from mpl_toolkits.mplot3d import Axes3D
 
 #Create a perceptron
 class Perceptron():
-    def __init__(self, dimensions, learning_rate = 1e-2, bias = True, activation_type = "tanh"):
+    def __init__(self, dimensions, learning_rate = 1e-2, bias = True, activation_type = "tanh", momentum = 0.9):
         #Initialize
         self.dimensions = dimensions
         self.learning_rate = learning_rate
         self.bias = bias
+        self.momentum = momentum
         self.activation_type = activation_type
 
         self.reset()
@@ -22,9 +23,11 @@ class Perceptron():
             self.weights = np.random.rand(self.dimensions + 1) - 0.5
         else:
             self.weights = np.random.rand(self.dimensions) - 0.5
+            
         self.data = np.zeros(self.dimensions)
         self.lin_comb = 0
         self.activation = 0
+        self.old_weights = self.weights
 
     def forward(self, data):
         #Forward pass data through the perceptron
@@ -61,6 +64,10 @@ class Perceptron():
             else:
                 self.gradients[i] = -1 * error[i] * 1 * self.data[i]
 
+        #Calculate momentum term
+        momentum_term = self.momentum * (self.weights - self.old_weights)
+        self.old_weights = self.weights
+
         #Update the weights
         if batch_type is "single":
             #Update weights for every data
@@ -89,6 +96,15 @@ class Perceptron():
 
                 batch_gradient = self.gradients[batch_indices].mean(axis = 0)
                 self.weights = self.weights - self.learning_rate * batch_gradient
+
+        #Lastly add momentum term
+        self.weights += momentum_term
+
+    def training(self, ground_truth):
+        #calculate error 
+        error = ground_truth - self.activation
+        #run backward code
+        self.backward(error)
 
     def __str__(self):
         return "Dimensions: %d, Bias: %d, Learning Rate: %f, Activation Type: %s"% (self.dimensions, 
