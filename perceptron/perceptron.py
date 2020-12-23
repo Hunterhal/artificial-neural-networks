@@ -6,13 +6,15 @@ from mpl_toolkits.mplot3d import Axes3D
 
 #Create a perceptron
 class Perceptron():
-    def __init__(self, dimensions, learning_rate = 1e-2, bias = True, activation_type = "tanh", momentum = 0.9):
+    def __init__(self, dimensions, learning_rate = 1e-2, bias = True, activation_type = "tanh", momentum = 0.9, batch_type = "batch", batch_size = 4):
         #Initialize
         self.dimensions = dimensions
         self.learning_rate = learning_rate
         self.bias = bias
         self.momentum = momentum
         self.activation_type = activation_type
+        self.batch_size = batch_size
+        self.batch_type = batch_type
 
         self.reset()
         print(self.__str__())
@@ -24,7 +26,7 @@ class Perceptron():
         else:
             self.weights = np.random.rand(self.dimensions) - 0.5
             
-        self.data = np.zeros(self.dimensions)
+        self.data = np.zeros((1, self.dimensions))
         self.lin_comb = 0
         self.activation = 0
         self.old_weights = self.weights
@@ -53,7 +55,7 @@ class Perceptron():
         #Clear the gradients
         self.gradients = 0
 
-    def backward(self, error, batch_type="single", batch_size = 4):
+    def backward(self, error):
         #Calculate gradients for all the data
         self.gradients = np.zeros((self.data.shape[0], self.data.shape[1]))
         for i in range(self.data.shape[0]):
@@ -64,41 +66,49 @@ class Perceptron():
             else:
                 self.gradients[i] = -1 * error[i] * 1 * self.data[i]
 
-        #Calculate momentum term
-        momentum_term = self.momentum * (self.weights - self.old_weights)
-        self.old_weights = self.weights
-
         #Update the weights
-        if batch_type is "single":
+        if self.batch_type is "single":
             #Update weights for every data
             indices = np.arange(len(self.data))
             #Shuffle training set "Stochastic Descent"
             random.shuffle(indices)
-            for i in indices:
+            for i in indices:        
+                #Calculate momentum term
+                momentum_term = self.momentum * (self.weights - self.old_weights)
+                self.old_weights = self.weights
                 self.weights = self.weights - self.learning_rate * self.gradients[i]
+                #Lastly add momentum term
+                self.weights += momentum_term
 
-        if batch_type is "all":
+        if self.batch_type is "all":
+            #Calculate momentum term
+            momentum_term = self.momentum * (self.weights - self.old_weights)
+            self.old_weights = self.weights
             #Find the mean of all gradients and one time update weights
             mean_gradient = self.gradients.mean(axis = 0)
             self.weights = self.weights - self.learning_rate * mean_gradient
+            #Lastly add momentum term
+            self.weights += momentum_term
 
-        if batch_type is "batch":
+        if self.batch_type is "batch":
             #Select random batches and update weights
             indices = list(np.arange(len(self.data)))
-            #Shuffle training set "Stochastic Descent"
+            #Shuffle training set
             random.shuffle(indices)
-            batch_steps = int(len(self.data) / batch_size)
+            batch_steps = int(len(self.data) / self.batch_size)
             for i in range(batch_steps):
                 batch_indices = []
                 #First sample random indices
-                for _ in range(batch_size):
+                for _ in range(self.batch_size):
                     batch_indices.append(indices.pop())
 
+                #Calculate momentum term
+                momentum_term = self.momentum * (self.weights - self.old_weights)
+                self.old_weights = self.weights
                 batch_gradient = self.gradients[batch_indices].mean(axis = 0)
                 self.weights = self.weights - self.learning_rate * batch_gradient
-
-        #Lastly add momentum term
-        self.weights += momentum_term
+                #Lastly add momentum term
+                self.weights += momentum_term
 
     def training(self, ground_truth):
         #calculate error 
@@ -120,50 +130,51 @@ def mean_square_error(ground_truth, desired):
 def create_color_list(data_set):
     return ["b" if data==1 else "r" for data in data_set]
 
-dimension = 2
-size = 100
-X_train = np.concatenate((np.random.multivariate_normal(np.ones(dimension), 0.3*np.eye(dimension), size), 
-                          np.random.multivariate_normal(-1 * np.ones(dimension), 0.3*np.eye(dimension), size)))
+if __name__ == "__main__":
+    dimension = 2
+    size = 100
+    X_train = np.concatenate((np.random.multivariate_normal(np.ones(dimension), 0.3*np.eye(dimension), size), 
+                            np.random.multivariate_normal(-1 * np.ones(dimension), 0.3*np.eye(dimension), size)))
 
-y_train = np.concatenate((np.ones(size), -1*np.ones(size)))
+    y_train = np.concatenate((np.ones(size), -1*np.ones(size)))
 
-print(y_train.shape)
-#Create perceptron
-perceptron = Perceptron(dimension, learning_rate = 1e-3, activation_type = "tanh")
+    print(y_train.shape)
+    #Create perceptron
+    perceptron = Perceptron(dimension, learning_rate = 1e-3, activation_type = "tanh", batch_type= "batch")
 
-plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
-plt.title("Training End")
-plt.show()
-mse = []
-#Train loop
-for i in range(1000):
-    yd = perceptron.forward(X_train)
-    #print(yd)
-    mse.append( mean_square_error(y_train, yd) )
-    #mse[-1] is the last error
-    print("Iteration: {}, Error is: {}".format(i, mse[-1]))
-    #Stop condition
-    if mse[-1] < 0.026:
-        break
-    error = y_train - yd
-    #print(error)
-    #Backpropagate error
-    perceptron.backward(error)
+    plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
+    plt.title("Dataset")
+    plt.show()
+    mse = []
+    #Train loop
+    for i in range(1000):
+        yd = perceptron.forward(X_train)
+        #print(yd)
+        mse.append( mean_square_error(y_train, yd) )
+        #mse[-1] is the last error
+        print("Iteration: {}, Error is: {}".format(i, mse[-1]))
+        #Stop condition
+        if mse[-1] < 0.01:
+            break
+        error = y_train - yd
+        #print(error)
+        #Backpropagate error
+        perceptron.training(y_train)
 
-mse = np.array(mse)
-plt.plot(np.arange(len(mse)), mse)
-plt.grid()
-plt.title("Training MSE")
-plt.show()
+    mse = np.array(mse)
+    plt.plot(np.arange(len(mse)), mse)
+    plt.grid()
+    plt.title("Training MSE")
+    plt.show()
 
-#Draw class separating line
-discriminator = np.zeros((2,2))
-discriminator[0,0] = -10
-discriminator[1,0] = 10
-discriminator[0,1] = -1 * (perceptron.weights[0] * discriminator[0,0] + perceptron.weights[2]) / perceptron.weights[1]
-discriminator[1,1] = -1 * (perceptron.weights[0] * discriminator[1,0] + perceptron.weights[2]) / perceptron.weights[1]
-plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
-plt.plot(discriminator[:, 0], discriminator[:, 1], c='k')
-plt.axis([-3, 3, -3, 3])
-plt.title("Training End")
-plt.show()
+    #Draw class separating line
+    discriminator = np.zeros((2,2))
+    discriminator[0,0] = -10
+    discriminator[1,0] = 10
+    discriminator[0,1] = -1 * (perceptron.weights[0] * discriminator[0,0] + perceptron.weights[2]) / perceptron.weights[1]
+    discriminator[1,1] = -1 * (perceptron.weights[0] * discriminator[1,0] + perceptron.weights[2]) / perceptron.weights[1]
+    plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
+    plt.plot(discriminator[:, 0], discriminator[:, 1], c='k')
+    plt.axis([-3, 3, -3, 3])
+    plt.title("Training End")
+    plt.show()
