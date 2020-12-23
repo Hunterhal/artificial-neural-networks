@@ -70,6 +70,26 @@ class Perceptron():
             for i in indices:
                 self.weights = self.weights - self.learning_rate * self.gradients[i]
 
+        if batch_type is "all":
+            #Find the mean of all gradients and one time update weights
+            mean_gradient = self.gradients.mean(axis = 0)
+            self.weights = self.weights - self.learning_rate * mean_gradient
+
+        if batch_type is "batch":
+            #Select random batches and update weights
+            indices = list(np.arange(len(self.data)))
+            #Shuffle training set "Stochastic Descent"
+            random.shuffle(indices)
+            batch_steps = int(len(self.data) / batch_size)
+            for i in range(batch_steps):
+                batch_indices = []
+                #First sample random indices
+                for _ in range(batch_size):
+                    batch_indices.append(indices.pop())
+
+                batch_gradient = self.gradients[batch_indices].mean(axis = 0)
+                self.weights = self.weights - self.learning_rate * batch_gradient
+
     def __str__(self):
         return "Dimensions: %d, Bias: %d, Learning Rate: %f, Activation Type: %s"% (self.dimensions, 
                                                                                     self.bias, 
@@ -93,7 +113,7 @@ y_train = np.concatenate((np.ones(size), -1*np.ones(size)))
 
 print(y_train.shape)
 #Create perceptron
-perceptron = Perceptron(dimension, learning_rate = 1e-3)
+perceptron = Perceptron(dimension, learning_rate = 1e-3, activation_type = "tanh")
 
 plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
 plt.title("Training End")
