@@ -10,14 +10,14 @@ Also torch natively built on batch processing, data has to be given in one by on
 
 ## Perceptron - Adaline
 
-![Adaline](adaline.PNG)
+![Adaline](adaline.png)
 
 ## Results
 
 The data is created artificially by two Gaussian distrbutions.  
 
-![Training End](training_end.PNG)
-![MSE](perceptron_training_mse.PNG)
+![Training End](training_end.png)
+![MSE](perceptron_training_mse.png)
 
 ## To-Do List
 
