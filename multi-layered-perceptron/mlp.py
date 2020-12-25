@@ -20,19 +20,23 @@ class MLP():
     def reset(self):
         #Reset MLP variables
         self.weights = []
-        self.bias = []
-
 
         for i in range(self.network_size):
             if self.enable_bias is True:
-                self.bias.append( np.random.rand(self.network[i + 1]) - 0.5 )
-
-            self.weights.append( np.random.rand(self.network[i], self.network[i+1]) - 0.5 )
+                self.weights.append( np.random.rand(self.network[i + 1]+1) - 0.5 )
+            else:
+                self.weights.append( np.random.rand(self.network[i], self.network[i+1]) - 0.5 )
 
     def forward(self, data):
         #Check the dimension of the data
         if data.shape[1] != self.network[0]:
             raise ValueError("Error, wrong input dimension")
+
+        #Bias is enabled add 1 at the end of the data
+        if self.enable_bias is True:
+            self.weights.append( np.random.rand(self.network[i + 1]+1) - 0.5 )
+        else:
+            self.weights.append( np.random.rand(self.network[i], self.network[i+1]) - 0.5 )
 
         #Get batch size from the input data
         self.batch_size = data.shape[0]
@@ -53,7 +57,6 @@ class MLP():
                 #print(self.activations[layer][batch_index].shape, self.weights[layer].shape)        
                 self.lin_combs[layer][batch_index] = np.matmul(self.activations[layer][batch_index], 
                                                                self.weights[layer])
-                self.lin_combs[layer][batch_index] += self.bias[layer]
                 self.activations[layer + 1][batch_index] = self.activation_function(self.lin_combs[layer][batch_index])
         return self.activations[-1]
 
@@ -125,7 +128,6 @@ class MLP():
         #Update weights and bias
         for layer in reversed(range(self.network_size)):
             self.weights[layer] -= self.learning_rate * weight_gradients[layer]
-            self.bias[layer] -= self.learning_rate * bias_gradients[layer]
 
     def __str__(self):
         return "Network: %s, Bias: %d, Learning Rate: %f, Activation Type: %s"% (self.network, 
