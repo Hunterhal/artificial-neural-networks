@@ -6,6 +6,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
+from PIL import Image
 
 def create_color_list(data_set):
     return ["b" if data==1 else "r" for data in data_set]
@@ -27,7 +28,7 @@ perceptron = nn.Sequential(
 print(perceptron)
 #Define criterion and optimizer
 criterion = nn.MSELoss()
-optimizer = optim.SGD(perceptron.parameters(), lr=1e-3)
+optimizer = optim.SGD(perceptron.parameters(), lr=1e-2)
 
 #Plot training data
 plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
@@ -39,10 +40,29 @@ mse = []
 #Numpy to torch
 X_train_torch = torch.tensor(X_train, dtype=torch.float32)
 y_train_torch = torch.tensor(y_train, dtype=torch.float32)
+
+#Draw class separating line
+discriminator = np.zeros((2,2))
+discriminator[0,0] = -10
+discriminator[1,0] = 10
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set_xlim(-3, 3)
+ax.set_ylim(-3, 3)
+ax.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
+
+a = perceptron[0].weight[0, 0] / perceptron[0].weight[0, 1]
+b = perceptron[0].bias / perceptron[0].weight[0, 1]
+discriminator[0,1] = -1 * a * discriminator[0,0] + b
+discriminator[1,1] = -1 * a * discriminator[1,0] + b
+line, = ax.plot(discriminator[:, 0], discriminator[:, 1], c='k')
+
 #Train loop
 for i in range(1000):
     training_loss = 0
-    for j in range(size):
+    indices = np.arange(size * 2)
+    random.shuffle(indices)
+    for j in indices:
         #Forward pass data
         yd = perceptron(X_train_torch[j, :])
         #Clear gradients
@@ -61,26 +81,25 @@ for i in range(1000):
 
     #mse[-1] is the last error
     print("Iteration: {}, Error is: {}".format(i, mse[-1]))
+    a = perceptron[0].weight[0, 0] / perceptron[0].weight[0, 1]
+    b = perceptron[0].bias / perceptron[0].weight[0, 1]
+
+    line.remove()
+    discriminator[0,1] = -1 * a * discriminator[0,0] + b
+    discriminator[1,1] = -1 * a * discriminator[1,0] + b
+    line, = ax.plot(discriminator[:, 0], discriminator[:, 1], c='k')
+    plt.pause(0.01)
 
     #Stop condition
-    if mse[-1] < 0.026:
+    if mse[-1] < 0.01:
         print("Training stopped")
         break
 
 mse = np.array(mse)
+plt.figure()
 plt.plot(np.arange(len(mse)), mse)
 plt.grid()
 plt.title("Training Loss")
 plt.show()
-
-#Draw class separating line
-discriminator = np.zeros((2,2))
-discriminator[0,0] = -10
-discriminator[1,0] = 10
-discriminator[0,1] = -1 * (perceptron[0].weight[0, 0] * discriminator[0,0] + perceptron[0].bias) / perceptron[0].weight[0, 1]
-discriminator[1,1] = -1 * (perceptron[0].weight[0, 0] * discriminator[1,0] + perceptron[0].bias) / perceptron[0].weight[0, 1]
-plt.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
-plt.plot(discriminator[:, 0], discriminator[:, 1], c='k')
-plt.axis([-3, 3, -3, 3])
 plt.title("Training End")
-plt.show()
+
