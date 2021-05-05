@@ -7,6 +7,7 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.animation import ImageMagickWriter
 
 def create_dataset(sample_size = 100, initial = 70):
     y = np.zeros(sample_size)
@@ -47,7 +48,7 @@ class Net(nn.Module):
     def forward(self, u, c):
         x_1 = self.input_layer(u)
         x_2 = self.context_layer(c)
-        x = F.tanh( x_2 + x_1 )
+        x = F.tanh(x_2 + x_1)
         out = self.out_layer(x)
 
         return out, x
@@ -78,58 +79,65 @@ ax_train_state = fig.add_subplot(gs[0, 0])
 ax_test_state = fig.add_subplot(gs[1, 0])
 ax_main = fig.add_subplot(gs[:, 1:])
 
-for test_number in range(100):
-    network.apply(init_weights)
-    loss_buffer = np.zeros(max_epoch)
-    y, train_loader = create_dataset(sample_size = sample_size, initial = initial)
-    c = torch.zeros(1, context_size)
-    train_loss_buffer = []
-    train_loss_buffer.append(0)
-    for epoch in range(max_epoch):
-        train_loss = 0
-        test_loss = 0
-        noise = np.random.normal(0, 0.01, sample_size).reshape(-1, 1).astype(np.float32)
-        for i_batch, data in enumerate(train_loader):
-            features, labels = data[0], data[1]
-            predict, state = network(torch.tensor(noise[i_batch]), c)
-            y_pred[i_batch] = predict.clone().detach()
-            if i_batch < (test_index):
-                optimizer.zero_grad()
-                loss = criterion(predict, labels)
-                train_loss += loss.data
-                loss.backward()
-                optimizer.step()
-            
-            c = torch.tensor( state )
+figManager = plt.get_current_fig_manager()
+figManager.window.showMaximized()
+plt.pause(2)
+writer = ImageMagickWriter(fps=4)
+file_name = "elman.gif"
+with writer.saving(fig, file_name, dpi=100):
+    for test_number in range(100):
+        network.apply(init_weights)
+        loss_buffer = np.zeros(max_epoch)
+        y, train_loader = create_dataset(sample_size = sample_size, initial = initial)
+        c = torch.zeros(1, context_size)
+        train_loss_buffer = []
+        train_loss_buffer.append(0)
+        for epoch in range(max_epoch):
+            train_loss = 0
+            test_loss = 0
+            noise = np.random.normal(0, 0.01, sample_size).reshape(-1, 1).astype(np.float32)
+            for i_batch, data in enumerate(train_loader):
+                features, labels = data[0], data[1]
+                predict, state = network(torch.tensor(noise[i_batch]), c)
+                y_pred[i_batch] = predict.clone().detach()
+                if i_batch < (test_index):
+                    optimizer.zero_grad()
+                    loss = criterion(predict, labels)
+                    train_loss += loss.data
+                    loss.backward()
+                    optimizer.step()
+                
+                c = torch.tensor( state )
 
-        ax_main.clear()
-        ax_train_state.clear()
-        ax_test_state.clear()
+            ax_main.clear()
+            ax_train_state.clear()
+            ax_test_state.clear()
 
-        ax_main.plot(t[initial:], y[initial:])
-        ax_main.plot(t[initial:initial+test_index], y_pred[:test_index], c='g')
-        ax_main.plot(t[initial+test_index:], y_pred[test_index:], c='r')
-        ax_main.grid()
-        ax_main.set_title("Test :%d, Epoch: %d, Training loss: %.7f"%(test_number, epoch, (train_loss/test_index)))
+            ax_main.plot(t[initial:], y[initial:])
+            ax_main.plot(t[initial:initial+test_index], y_pred[:test_index], c='g')
+            ax_main.plot(t[initial+test_index:], y_pred[test_index:], c='r')
+            ax_main.grid()
+            ax_main.set_title("Test :%d, Epoch: %d, Training loss: %.7f"%(test_number, epoch, (train_loss/test_index)))
 
-        ax_train_state.plot(y[:test_index-1], y[1:test_index], c='b')
-        ax_train_state.plot(y_pred[:test_index-1], y_pred[1:test_index], c='g')
-        ax_train_state.grid()
-        ax_train_state.set_title("Train State")
+            ax_train_state.plot(y[:test_index-1], y[1:test_index], c='b')
+            ax_train_state.plot(y_pred[:test_index-1], y_pred[1:test_index], c='g')
+            ax_train_state.grid()
+            ax_train_state.set_title("Train State")
 
-        ax_test_state.plot(y[test_index:-1], y[test_index+1:], c='b')
-        ax_test_state.plot(y_pred[test_index:-1], y_pred[test_index+1:], c='r')
-        ax_test_state.grid()
-        ax_test_state.set_title("Test State")
+            ax_test_state.plot(y[test_index:-1], y[test_index+1:], c='b')
+            ax_test_state.plot(y_pred[test_index:-1], y_pred[test_index+1:], c='r')
+            ax_test_state.grid()
+            ax_test_state.set_title("Test State")
 
-        plt.pause(0.1)
-        print("Test :%d, Epoch: %d, Training loss: %.7f"%(test_number, epoch, (train_loss/test_index)))
-        train_loss_buffer.append(train_loss/test_index)
-        if(train_loss_buffer[-1] < 0.04):
-            out = True
+            plt.pause(0.1)
+            writer.grab_frame()
+            print("Test :%d, Epoch: %d, Training loss: %.7f"%(test_number, epoch, (train_loss/test_index)))
+            train_loss_buffer.append(train_loss/test_index)
+            if(train_loss_buffer[-1] < 0.04):
+                out = True
+                break
+            elif( (train_loss_buffer[-1] > 0.2) and (len(train_loss_buffer) > 3)):
+                break
+
+        if out is True:
             break
-        elif( (train_loss_buffer[-1] > 0.2) and (len(train_loss_buffer) > 3)):
-            break
-
-    if out is True:
-        break
