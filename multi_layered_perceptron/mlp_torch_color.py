@@ -11,14 +11,26 @@ from mpl_toolkits.mplot3d import Axes3D
 from PIL import Image
 
 dimension = 2
-size = 100
-variance = 0.1
+size = 200
+variance = 0.3
 data_size = size//2
 X_train = np.concatenate((np.random.multivariate_normal([0, 0], variance*np.eye(dimension), data_size), 
                           np.random.multivariate_normal([2, 2], variance*np.eye(dimension), data_size), 
                           np.random.multivariate_normal([0, 2], variance*np.eye(dimension), data_size), 
                           np.random.multivariate_normal([2, 0], variance*np.eye(dimension), data_size)))
+"""
+cls1 = np.random.multivariate_normal([1, 1], variance*np.eye(dimension), size//2)
+phi = np.random.uniform(0, 2*np.pi, size//2)
+rad = np.random.uniform(2.1, 2.6, size//2)
+cls2 = np.array([rad*np.cos(phi) + 1, rad*np.sin(phi) + 1])
+cls1 = np.concatenate((cls1, cls2.T))
+phi = np.random.uniform(0, 2*np.pi, size)
+rad = np.random.uniform(1.5, 2, size)
+cls2 = np.array([rad*np.cos(phi) + 1, rad*np.sin(phi) + 1])
 
+
+X_train = np.concatenate((cls1, cls2.T))
+"""
 y_train = np.concatenate((np.ones(size), -1*np.ones(size)))
 #Numpy to torch
 X_train_torch = torch.tensor(X_train, dtype=torch.float32)
@@ -29,10 +41,12 @@ def create_color_list(data_set):
 
 def calculate_map(perceptron, resolution):
     classification_map = torch.zeros(resolution, resolution)
+    perceptron.train(False)
     with torch.no_grad():
         for i in range(resolution):
             map_row = torch.cat((-2 + (i * 6 * torch.ones(resolution, 1) / resolution), -2 + (6 * torch.arange(resolution, dtype=torch.float32).view(-1, 1) / resolution)), axis=1)
             classification_map[i, :] = perceptron(map_row).view(-1)
+    perceptron.train(True)
     return classification_map
 
 #Plot training data
@@ -51,9 +65,9 @@ def init_weights(m):
         m.bias.data.fill_(0.01)
 
 network = nn.Sequential(
-    nn.Linear(2, 20),
-    nn.Sigmoid(),
-    nn.Linear(20, 1),
+    nn.Linear(2, 10),
+    nn.ReLU(),
+    nn.Linear(10, 1),
     nn.Tanh()
 )
 
@@ -74,7 +88,7 @@ ax.set_ylim(-2, 4)
 ax.scatter(X_train[:, 0], X_train[:, 1], c=create_color_list(y_train), s=5)
 
 map_c = np.asarray(calculate_map(network, 100).clone().detach())
-im = ax.imshow(map_c, vmin=-1, vmax=1, cmap='RdBu', extent=[-2, 4, -2, 4], alpha=0.7)  
+im = ax.imshow(map_c, vmin=-1, vmax=1, cmap='RdBu', extent=[-2, 4, -2, 4], alpha=0.6)  
 
 network.apply(init_weights)
 loss_buffer = np.zeros((max_epoch, 2))
@@ -101,6 +115,7 @@ for epoch in range(max_epoch):
     upscaled_image = Image.fromarray(map_c).resize([300, 300], resample=Image.LANCZOS)
     upscaled_image = np.asarray(upscaled_image.rotate(90))
     im.set_data(upscaled_image)
+    plt.title("Epoch: %d, Error is: %.4f"%(epoch, mse[-1]))
     plt.pause(0.01)
 
     #Stop condition

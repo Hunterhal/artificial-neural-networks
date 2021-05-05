@@ -82,7 +82,6 @@ class cart_pole():
         
         plt.pause(0.1)
     
-
 sim_size = 100
 max_epoch = 10
 sim = cart_pole(sim_size)

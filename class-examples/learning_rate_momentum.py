@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import numpy as np
-
 x = np.linspace(-2, 2, 1000, endpoint=True)
 #seconds
 simulation_speed = 0.4

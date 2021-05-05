@@ -19,12 +19,12 @@ def create_dataset(sample_size = 100, initial = 70):
                 (0.1 * np.sin(np.pi * y[i-1])) + 
                 noise[i])
 
-        x_train = np.array(noise[initial:], dtype=np.float32).reshape(-1, 1)
-        y_train = np.array(y[initial:], dtype=np.float32).reshape(-1, 1)
+    x_train = np.array(noise[initial:], dtype=np.float32).reshape(-1, 1)
+    y_train = np.array(y[initial:], dtype=np.float32).reshape(-1, 1)
 
-        dataset_train_torch = TensorDataset(torch.tensor(x_train), torch.tensor(y_train)) # create your datset
-        
-        train_loader = DataLoader(dataset_train_torch, shuffle=False, batch_size=1) # create your dataloader
+    dataset_train_torch = TensorDataset(torch.tensor(x_train), torch.tensor(y_train)) # create your datset
+    
+    train_loader = DataLoader(dataset_train_torch, shuffle=False, batch_size=1) # create your dataloader
 
     return y, train_loader
 
@@ -46,9 +46,9 @@ class Net(nn.Module):
         self.out_layer = nn.Linear(context_size, 1, bias=False)
 
     def forward(self, u, c):
-        x_1 = F.tanh( self.input_layer(u) )
-        x_2 = F.tanh( self.context_layer(c) )
-        x = x_2 + x_1
+        x_1 = self.input_layer(u)
+        x_2 = self.context_layer(c)
+        x = F.tanh(x_2 + x_1)
         out = self.out_layer(x)
 
         return out, x
